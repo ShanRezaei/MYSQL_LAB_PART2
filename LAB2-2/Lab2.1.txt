@@ -1,0 +1,113 @@
+PREPARED STATEMENTS	
+
+Create the following prepared statements and execute them in order to test them.
+Remember the prepared statements are not saved, so please save them in a file for lab correction.
+
+1. Show all the animals (id, name, sex)
+
+PREPARE statement1 FROM 'SELECT id,name,sex FROM animal';
+EXECUTE statement1;
+
+
+
+
+2. Show all the animals by ? race_id (id, name, sex, dob, race_name)
+
+PREPARE statement2 FROM 
+'SELECT animal.id,animal.name,sex,dob,race.name,race_id FROM animal 
+INNER JOIN race ON race.id=animal.race_id WHERE race_id=?';
+ SET @a = 1;
+SET @b=2;
+SET @c=3;
+SET @d=4;
+SET @e=5;
+SET @f=6;
+SET @g=7;
+SET @h=8;
+SET @i=9;
+EXECUTE statement2 USING @a;
+EXECUTE statement2 USING @b;
+EXECUTE statement2 USING @c;
+EXECUTE statement2 USING @d;
+EXECUTE statement2 USING @e;
+EXECUTE statement2 USING @f;
+EXECUTE statement2 USING @g;
+EXECUTE statement2 USING @h;
+EXECUTE statement2 USING @i;
+
+
+
+
+
+3. Show all the animals by ? race_id and ? species_id (id, name, sex, race_name, species_name)
+
+PREPARE statement3 FROM 
+'SELECT animal.id,animal.name,sex,race.name,animal.race_id,animal.species_id,species.current_name FROM animal 
+INNER JOIN race ON race.id=animal.race_id 
+INNER JOIN species ON species.id=animal.species_id
+WHERE animal.race_id=? AND animal.species_id=?';
+
+SET @race_id = 2;
+SET @species_id = 1;
+
+EXECUTE statement3 USING @race_id, @species_id;
+
+
+
+
+
+
+
+4. Which specie has less than ? males and ? females (id, name, sex, race_name, species_name)
+where ? is a number of animals
+
+PREPARE statement4 FROM 
+'SELECT   sex,animal.species_id ,COUNT(*) FROM animal
+ INNER JOIN species ON species.id=animal.species_id  
+GROUP BY animal.species_id
+ HAVING (animal.sex='M' AND COUNT(sex)>10) OR (animal.sex='F' AND COUNT(sex)>4)';
+
+SET @m_s = 12;
+SET @f_s= 6;
+
+
+EXECUTE statement4 USING @m_s, @f_s;
+ 
+
+
+
+
+5. Assuming the inflation rises 20% more every year, show the prices of ? animals for the ? year based on specie's race (id, name, sex, race_name, species_name)
+where first argument is the number of animals to show and the second argument is the year number
+
+SET @inflation ='SELECT a.id, a.name, a.sex, r.name, s.current_name, r.price AS 'base price', r.price * ROUND(POWER(1.2, ? - YEAR(a.dob)),2) AS 'Inflation'
+					 FROM animal a
+                    INNER  JOIN race r
+						ON a.race_id = r.id
+					INNER JOIN species s
+						ON a.species_id = s.id
+					 ORDER BY a.id
+                     LIMIT ?';
+                     
+PREPARE ps_inflation
+FROM @inflation;
+
+
+SET @select_num_animals = 5;
+SET @select_year = 2013;
+
+EXECUTE ps_inflation USING @select_year, @select_num_animals;
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hint: ? = parameter

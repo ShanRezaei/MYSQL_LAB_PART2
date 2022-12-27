@@ -1,0 +1,312 @@
+			 ********************
+			 * STORE PROCEDURES *
+			 ********************
+
+1. STORE PROCEDURE: list_animals
+	Display the list of all the animals with a 
+
+DELIMITER //
+CREATE PROCEDURE show_anim2_race_query()
+BEGIN
+SELECT  animal.name, race_id
+FROM animal
+INNER JOIN race ON race.id=animal.race_id;
+END//
+DELIMITER ;
+
+
+CALL show_anim2_race_query();
+
+
+
+
+2. STORE PROCEDURE: fetch_animal_age
+	IN: Animal id
+	OUT: Animal age in numbers
+
+DELIMITER //
+CREATE PROCEDURE show_anim_ages3_query(IN anim_id INT, OUT anim_age_year INT )
+BEGIN
+SELECT TIMESTAMPDIFF(YEAR,DATE(dob),CURDATE())AS 'year' INTO anim_age_year 
+ FROM animal
+WHERE id = anim_id; 
+END//
+DELIMITER ;
+
+CALL show_anim_ages3_query(19, @var_animal);
+SELECT @var_animal;
+
+
+
+
+
+3. STORE PROCEDURE: price_of_pets
+	IN: 3 Animal ids
+	OUT: Price of the 3 animals
+
+DELIMITER |
+CREATE PROCEDURE show_anim_price_query3(IN anim_id1 INT,IN anim_id2 INT,IN anim_id3 INT, OUT sum_anim_price INT )
+BEGIN
+SELECT SUM(COALESCE(species.price,race.price) +race.price) INTO sum_anim_price 
+ FROM animal
+JOIN species 
+ON animal.species_id = species.id 
+JOIN race
+ON race.species_id=species.id
+WHERE animal.id IN( anim_id1,anim_id2,anim_id3); 
+END|
+DELIMITER ;
+
+CALL show_anim_price_query3(2,5,8, @var_price_of_pets);
+SELECT @var_price_of_pets;
+
+
+
+
+
+
+
+4. STORE PROCEDURE: total_age_of_animal
+	IN: 1 Animal id
+	INOUT: Cummulative age of the animals
+	Do it for 5 animals
+
+
+
+set @csum := 0;
+DELIMITER |
+CREATE PROCEDURE show_anim_ages_cum_query5(IN anim_age_id INT, INOUT csum INT )
+BEGIN
+SELECT (YEAR(NOW()) - YEAR(dob))
+FROM animal
+WHERE id = anim_age_id
+csum := csum + (YEAR(NOW()) - YEAR(dob)) ; 
+END|
+DELIMITER ;
+
+CALL show_anim_ages_cum_query5(1, @csum);
+SELECT @csum;
+
+
+
+ select YEAR(dob),TIMESTAMPDIFF(YEAR,DATE(dob),CURDATE()), (@csum := @csum + TIMESTAMPDIFF(YEAR,DATE(dob),CURDATE())) as cumulative_age from animal 
+order by YEAR(dob) LIMIT 5;
+
+
+
+
+
+
+
+
+5. STORE PROCEDURE: top_x_animals
+	IN: How many animals to display
+	Display a list of x number of animals for the following:
+		-Youngest
+		-Oldest
+		-Cheapest
+		-Most Expensive
+		-Male
+		-Female
+
+# youngest
+DELIMITER |
+CREATE PROCEDURE top_x_animals_youngest1(IN p_var SERIAL)
+BEGIN
+	SELECT * 
+	FROM animal
+	ORDER BY DATE(dob) ASC
+    LIMIT p_var;
+END |
+DELIMITER ;
+
+CALL top_x_animals_youngest1(3);
+
+	
+# oldest
+DELIMITER |
+CREATE PROCEDURE top_x_animals_oldest1(IN p_var SERIAL)
+BEGIN
+	SELECT * 
+	FROM animal
+	ORDER BY DATE(dob) 
+    LIMIT p_var;
+END |
+DELIMITER ;
+
+CALL top_x_animals_oldest1(6);
+
+# cheapest animal
+DELIMITER |
+CREATE PROCEDURE top_x_animals_most_expensive1(IN p_var SERIAL)
+BEGIN
+
+	SELECT a.id, a.name, DATE(a.dob) AS 'dob', r.price
+    FROM animal a
+    JOIN race r
+		ON a.race_id = r.id
+	WHERE r.price IS NOT NULL
+	ORDER BY r.price DESC
+    LIMIT p_var;
+	
+END | 
+DELIMITER ;
+
+CALL top_x_animals_most_expensive1(15);
+
+
+# most expensive animal
+DELIMITER |
+CREATE PROCEDURE top_x_animals_least_expensive1(IN p_var SERIAL)
+BEGIN
+
+	SELECT a.id, a.name, DATE(a.dob) AS dob, r.price
+    FROM animal a
+    JOIN race r
+		ON a.race_id = r.id
+	WHERE r.price IS NOT NULL
+	ORDER BY r.price
+    LIMIT p_var;
+	
+END | 
+DELIMITER ;
+
+CALL top_x_animals_least_expensive1(5);
+
+
+# male animals
+DELIMITER |
+CREATE PROCEDURE top_male_animals1(IN p_var INT)
+BEGIN
+
+	SELECT * 
+	FROM animal
+	WHERE sex = 'M' AND sex IS NOT NULL
+	ORDER BY name
+	LIMIT p_var;
+
+END | 
+DELIMITER ;
+
+CALL top_male_animals1(7);
+
+
+# Fmale animals
+DELIMITER |
+CREATE PROCEDURE top_female_animals1(IN p_var INT)
+BEGIN
+
+	SELECT * 
+	FROM animal
+	WHERE sex = 'F' AND sex IS NOT NULL
+	ORDER BY name
+	LIMIT p_var;
+
+END | 
+DELIMITER ;
+
+CALL top_female_animals1(7);
+
+
+
+
+
+-----------------------------------------------------------------------------------
+
+
+DELIMITER |
+CREATE PROCEDURE get_difer_anim_char99900( OUT young_anim VARCHAR(100),OUT old_anim VARCHAR(100),OUT cheapest_anim VARCHAR(100))
+BEGIN
+
+
+		-- youngest
+		
+SELECT name INTO young_anim FROM animal
+ORDER BY DATE(dob) DESC
+LIMIT 1;
+
+-- oldest
+		
+            SELECT name  INTO old_anim
+	FROM animal
+	ORDER BY DATE(dob) 
+    LIMIT 1;
+
+-- cheapest
+    SELECT animal.name INTO cheapest_anim
+FROM animal
+JOIN species
+ON animal.species_id = species.id
+ORDER BY species.price  
+    LIMIT 1;
+
+
+		
+
+END |
+DELIMITER ;
+
+
+CALL get_difer_anim_char99900(@young_anim,@old_anim,@cheapest_anim);
+SELECT @young_anim,@old_anim,@cheapest_anim,@most_expens,@f_count,@m_count;
+
+
+
+
+
+		-- most_expens
+SELECT animal.name  INTO most_expens FROM animal
+JOIN species
+ON animal.species_id = species.id
+ORDER BY species.price  DESC
+    LIMIT 1;
+                            -- f_coun
+
+SELECT count(*)  INTO f_count
+	FROM animal
+	WHERE sex = 'F' AND sex IS NOT NULL
+	LIMIT 1;
+
+                           -- m_coun
+
+SELECT count(*) INTO m_count
+	FROM animal
+	WHERE sex = 'M' AND sex IS NOT NULL
+	LIMIT 1;
+
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+PREPARE statement5 FROM
+
+'SELECT sex,animal.species_id ,COUNT(sex) FROM animal
+INNER JOIN species ON species.id=animal.species_id
+WHERE animal.sex ='M' 
+GROUP BY sex,animal.species_id
+HAVING COUNT(sex) < ?
+
+
+UNION 
+
+
+SELECT sex,animal.species_id ,COUNT(sex) FROM animal
+INNER JOIN species ON species.id=animal.species_id
+WHERE animal.sex ='F' 
+GROUP BY sex,animal.species_id
+HAVING COUNT(sex) < ? ' ;
+
+SET @m_s = 8;
+SET @f_s= 10;
+EXECUTE statement5 USING @m_s, @f_s;
+
+
+----------------------------------------------------------------------------------------------------
+
+DELIMITER &&  
+CREATE PROCEDURE get_student (IN var1 INT)  
+BEGIN  
+    SELECT * FROM animal LIMIT var1;  
+    SELECT COUNT(id) AS Total_Student FROM animal;    
+END &&  
+DELIMITER ;  

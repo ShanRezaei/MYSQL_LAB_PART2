@@ -1,0 +1,208 @@
+== NO ASSUMPTIONS ==
+Easy
+1. Select all the animals born in June (assuming you don't know the month number of June)
+SELECT *
+FROM animal
+WHERE MONTHNAME(dob) = 'June';
+ORDER BY MONTH(dob); -- shows all dates in order of month
+
+
+
+2. Select all the animals born in the first 8 weeks of the year
+SELECT *
+FROM animals
+WHERE WEEKOFYEAR(dob) IN (1,2,3,4,5,6,7,8)
+
+
+
+3. Display the day (in numbers) and month of birth (in words) of all the turtles and cats born before 2007 (two columns).
+SELECT name, DAY(dob) AS days, MONTHNAME(dob)
+FROM animal
+WHERE (species_id = '3' AND YEAR(dob) < 2007) OR (species_id = 2 AND YEAR(dob) < 2007);
+
+
+
+4. Display the day (in numbers) and month of birth (in words) of all the turtles and cats born before 2007 (one column).
+SELECT name, CONCAT(DAY(dob), '  ', MONTHNAME(dob)) AS 'Date'
+FROM animal
+WHERE (species_id = '3' AND YEAR(dob) < 2007) OR (species_id = 2 AND YEAR(dob) < 2007);
+
+
+
+5. Select all the animals born in April, but not April 24, sorted by decreasing birth time (hours, minutes, seconds) and display their date of birth as in the exemple below:
+
+ SELECT name,  DATE_FORMAT(dob, '%M %D, at %Hh%i %p, in %Y after J.C') AS 'date format' 
+FROM animal
+WHERE MONTHNAME(dob) = 'April' AND DAY(dob) != 24
+ORDER BY TIME(dob) DESC;
+
+
+
+
+6. Display all the animal ages in seconds, minutes, hours, days, months, years (I want a column for each)
+SELECT name, TO_SECONDS(dob)  AS 'seconds', TIMESTAMPDIFF(MINUTE,DATE(dob),'2022-09-27')AS 'minute', TIMESTAMPDIFF(HOUR,DATE(dob),'2022-09-27') AS 'hour', TO_DAYS(dob) AS 'day', TIMESTAMPDIFF(MONTH,DATE(dob),'2022-09-27') AS 'month', TIMESTAMPDIFF(YEAR,DATE(dob),'2022-09-27')AS 'year', dob
+FROM animal
+ORDER BY name
+
+
+
+
+7. Which animals have their birthdays in a month with an even number of days.
+SELECT * 
+FROM animal
+WHERE DAY(dob) %2 = 0;
+
+
+
+
+8. Assuming that cats and dogs should not live more than 4 years. . . which of them should be dead by now. (#sorryNoSoSorry)
+SELECT CONCAT(name, ' / ' ,'DECEASED') AS name, current_name AS 'species', YEAR(dob), TIMESTAMPDIFF(YEAR,DATE(dob),'2022-09-27') AS AGE_IN_YEAR
+FROM animal
+JOIN species
+ON animal.species_id = species.id
+WHERE (TIMESTAMPDIFF(YEAR,DATE(dob),'2022-09-27') > 4 AND current_name = 'cat') OR (TIMESTAMPDIFF(YEAR,DATE(dob),'2022-09-27')> 4 AND current_name = 'dog')
+ORDER BY dob;
+
+
+
+
+Medium
+
+1. Moka was supposed to be born on February 27, 2008. Calculate how many days late she was born.
+SELECT name, DATE(dob) AS 'birth date', DATEDIFF(dob, '2008-02-27') AS 'days born late' 
+FROM animal 
+WHERE name = 'Moka';
+
+
+
+2. Display the date that each parrot will celebrate their 25th birthday.
+SELECT name, dob, ADDDATE(dob, INTERVAL 25 YEAR) AS 'added years', current_name AS 'species'
+FROM animal
+JOIN species
+ON animal.species_id = species.id
+WHERE current_name = 'parrot'
+ORDER BY dob;
+
+
+
+3. Select all the animals born within a month that has exactly 29 days.
+SELECT name, dob
+FROM animal
+WHERE MONTH(dob) = 2
+ORDER BY name; 
+
+
+
+4. After twelve weeks, a kitten is weaned (with some exceptions of course). 
+Display the date from which a cats may be adopted (passed or future date).
+SELECT name, current_name, DATE(dob) AS 'born', DATE(ADDDATE(dob, INTERVAL 98 DAY)) AS 'CAN_BE_ADOPTED'
+FROM animal
+JOIN species
+ON animal.species_id = species.id
+WHERE current_name = 'cat'
+ORDER BY name;
+
+
+
+5. After Rouquine, Zira, Bouli and Balou are part of the same scope. 
+Calculate how long, in minutes, Balou was born before Zira.
+SELECT GROUP_CONCAT(name) AS 'names', DATE(dob),MIN(MINUTE(dob) )AS 'MIN-time-IN-MINUTES', MAX(MINUTE(dob)) AS 'MAX-TIME-IN-MINUTES',
+MAX(MINUTE(dob))-MINUTE(TIME(dob) ) AS 'DIFFERENCE'
+ FROM animal
+JOIN species
+	ON animal.species_id = species.id
+WHERE name = 'Balou' OR name = 'Zira'
+GROUP BY DATE(dob);
+
+
+
+6. Display the age of each animal in numbers
+SELECT name,  CONCAT
+        (
+            FLOOR((TIMESTAMPDIFF(MONTH, dob, CURDATE()) / 12)), ' YEARS ',
+            MOD(TIMESTAMPDIFF(MONTH, dob, CURDATE()), 12) , ' MONTHS'
+        ) AS age
+FROM animal;
+
+
+7. Display the animals born in the same year, Display in this format: 
+"... was born this YYYY, in MM, on DD (name of day), at HH:MM:SS" 
+SELECT GROUP_CONCAT(name) AS 'names', COUNT(*) AS 'count', DATE_FORMAT(dob, 'Was born this year in %Y, in %M, on the %D at %H:%i:%S %p') AS 'date'
+FROM animal
+GROUP BY YEAR(dob);
+
+
+
+
+
+
+Medium Hard
+1. Rouquine, Zira, Bouli and Balou are part of the same scope. 
+Calculate how long in minutes elapsed between the first born and last born.
+
+SELECT GROUP_CONCAT(name) AS 'names', DATE(dob),MIN(MINUTE(dob) )AS 'MIN-time-IN-MINUTES', MAX(MINUTE(dob)) AS 'MAX-TIME-IN-MINUTES',
+MAX(MINUTE(dob))-MINUTE(TIME(dob) ) AS 'DIFFERENCE'
+ FROM animal
+JOIN species
+	ON animal.species_id = species.id
+WHERE name = 'Balou' OR name = 'Zira'  OR name = 'Bouli '  OR name = 'Rouquine ' 
+GROUP BY DATE(dob);
+ORDER BY TIME(dob) 
+
+
+
+
+
+2. Calculate how many animals are born during a month in which the molds are the most consumables (that is to say the months ending in "ber" [September, October, November and December]).
+SELECT GROUP_CONCAT(name) AS 'Names', DATE(dob) AS 'Date', MONTHNAME(dob) AS 'Month', COUNT(*) AS 'count'
+FROM animal
+WHERE MONTHNAME(dob) IN('September', 'October', 'November', 'December')
+GROUP BY MONTHNAME(dob);
+
+
+
+
+
+3. For dogs and cats, display the date of birth of litters of at least two individuals (DD / MM / YYYY), 
+and the number of individuals for each of these litters. 
+By Litter I mean 'Animals Born on the same date'.
+Attention, it is possible that a range of cats was born the same day a litter of dogs.
+
+
+
+
+
+
+
+4. Calculate the # of dogs hat were born each year between 2006 and 2010 Advrage the total (knowing that we had at least one birth every year).
+SELECT GROUP_CONCAT(name), YEAR(dob), current_name AS 'species', COUNT(YEAR(dob)) AS total_dogs_per_year
+FROM animal
+JOIN species
+	ON animal.species_id = species.id
+WHERE (current_name = 'dog') AND (YEAR(dob) < 2010 AND YEAR(dob) > 2006)
+GROUP BY YEAR(dob)
+WITH ROLLUP ;
+
+
+
+
+5. Display the date in ISO format of the fifth anniversary of an animals having a father or a mother.
+
+SELECT name, DATE(dob), DATE_ADD(DATE(dob), INTERVAL 5 YEAR) AS '5th anniversary',mother_id,father_id
+FROM animal
+WHERE mother_id IS NOT NULL OR father_id IS NOT NULL;
+
+
+SELECT child.name AS 'child', mother.name AS 'mother', father.name AS 'father', DATE_FORMAT(child.dob, '%Y-%M-%D   %H:%i:%S %p') AS 'dob'
+FROM animal child
+JOIN animal mother
+	ON child.mother_id = mother.id
+JOIN animal father
+	ON child.father_id = father.id
+
+;
+
+
+
+
+
